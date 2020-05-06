@@ -34,7 +34,7 @@ type TokenTemplate struct {
 
 // MarketPlaceItemOption for marketplace item
 type MarketPlaceItemOption struct {
-	ExpiredDate uint32
+	ExpiredDate int64
 	Stocks      uint32
 	Auditor     OntID
 	OJs         []OntID
@@ -43,7 +43,7 @@ type MarketPlaceItemOption struct {
 // DTokenItem is composed from marketplace item options
 type DTokenItem struct {
 	Fee         Fee
-	ExpiredDate uint32
+	ExpiredDate int64
 	Stocks      uint32
 	Templates   []TokenTemplate
 }
@@ -51,4 +51,11 @@ type DTokenItem struct {
 // Token def
 type Token interface {
 	AlphabeticalBytes() []byte
+}
+
+// CrowdSouring def
+type CrowdSouring struct {
+	Count       uint32
+	ExpiredTime uint32
+	UnitFee     Fee
 }

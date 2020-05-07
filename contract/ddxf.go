@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"strings"
+
 	"github.com/zhiqiangxu/ddxf"
 )
 
@@ -15,10 +17,19 @@ type DTokenItem struct {
 	Templates   map[string]struct{}
 }
 
+// RT for resource type
+type RT int
+
+const (
+	// RTStaticFile for static file
+	RTStaticFile RT = iota
+)
+
 // ResourceDDO is ddo for resource
 type ResourceDDO struct {
 	Manager  ddxf.OntID // data owner id
 	Endpoint string     // data service provider uri
+	RT       RT
 }
 
 // SellerItemInfo for ddxf
@@ -51,6 +62,16 @@ func (c *DDXFContract) DTokenSellerPublish(resourceID string, resourceDDO Resour
 
 	if resourceDDO == emptyResourceDDO {
 		panic("resourceDDO empty")
+	}
+
+	switch resourceDDO.RT {
+	case RTStaticFile:
+		for tokenHash := range item.Templates {
+			// desc hash : data hash
+			if len(strings.Split(tokenHash, ":")) != 2 {
+				panic(fmt.Sprintf("invalid tokenHash %s", tokenHash))
+			}
+		}
 	}
 
 	c.sellerItemInfo[resourceID] = SellerItemInfo{Item: item, ResourceDDO: resourceDDO}

@@ -30,7 +30,7 @@ type ResourceDDO struct {
 	ResourceType RT
 	Manager      ddxf.OntID // data owner id
 	Endpoint     string     // data service provider uri
-	Hash         string     // required if len(Templates) > 1
+	DescHash     string     // required if len(Templates) > 1
 }
 
 // SellerItemInfo for ddxf
@@ -40,11 +40,36 @@ type SellerItemInfo struct {
 	ResourceDDO ResourceDDO
 }
 
+// CountAndAgent for ddxf
+type CountAndAgent struct {
+	Count  uint32
+	Agents map[ddxf.OntID]uint32
+}
+
+// DecCount for decrease Count
+func (caa *CountAndAgent) DecCount(n uint32) (usedup bool) {
+	caa.Count -= n
+	usedup = caa.Count == 0
+	return
+}
+
+// DecCountByAgent for decrease Count by agent
+func (caa *CountAndAgent) DecCountByAgent(n uint32, agent ddxf.OntID) (usedup bool) {
+	caa.Count -= n
+	caa.Agents[agent] -= n
+	if caa.Agents[agent] == 0 {
+		delete(caa.Agents, agent)
+	}
+
+	usedup = caa.Count == 0
+	return
+}
+
 // SellerItemStatus for ddxf
 // mutable
 type SellerItemStatus struct {
 	Sold   uint32
-	Owners map[ddxf.OntID]map[string]uint32
+	Owners map[ddxf.OntID]map[string]*CountAndAgent
 }
 
 // DDXFContract for ddxf
@@ -79,12 +104,12 @@ func (c *DDXFContract) DTokenSellerPublish(resourceID string, resourceDDO Resour
 		}
 	}
 
-	if len(item.Templates) > 1 && resourceDDO.Hash == "" {
+	if len(item.Templates) > 1 && resourceDDO.DescHash == "" {
 		panic("ResourceDDO.Hash empty for batched template")
 	}
 
 	c.sellerItemInfo[resourceID] = SellerItemInfo{Item: item, ResourceDDO: resourceDDO}
-	c.sellerItemStatus[resourceID] = SellerItemStatus{Owners: make(map[ddxf.OntID]map[string]uint32)}
+	c.sellerItemStatus[resourceID] = SellerItemStatus{Owners: make(map[ddxf.OntID]map[string]*CountAndAgent)}
 
 }
 
@@ -109,7 +134,7 @@ func (c *DDXFContract) BuyDTokenFromReseller(resourceID string, n uint32, buyerA
 	}
 
 	for tokenHash := range itemInfo.Item.Templates {
-		if resellerTokens[tokenHash] < n {
+		if resellerTokens[tokenHash].Count < n {
 			panic(fmt.Sprintf("resourceID owned not enough for token:%s", tokenHash))
 		}
 	}
@@ -120,19 +145,17 @@ func (c *DDXFContract) BuyDTokenFromReseller(resourceID string, n uint32, buyerA
 
 	ownedTokens := itemStatus.Owners[buyerAccount]
 	if ownedTokens == nil {
-		ownedTokens = make(map[string]uint32)
+		ownedTokens = make(map[string]*CountAndAgent)
 		itemStatus.Owners[buyerAccount] = ownedTokens
 	}
 
 	for tokenHash := range itemInfo.Item.Templates {
-		resellerTokenCount := resellerTokens[tokenHash]
-		if resellerTokenCount == n {
+		resellerToken := resellerTokens[tokenHash]
+		if resellerToken.DecCount(n) {
 			delete(resellerTokens, tokenHash)
-		} else {
-			resellerTokens[tokenHash] -= n
 		}
 
-		ownedTokens[tokenHash] += n
+		ownedTokens[tokenHash].Count += n
 	}
 }
 
@@ -167,16 +190,16 @@ func (c *DDXFContract) BuyDToken(resourceID string, n uint32, buyerAccount ddxf.
 	itemStatus.Sold += n
 	ownedTokens := itemStatus.Owners[buyerAccount]
 	if ownedTokens == nil {
-		ownedTokens = make(map[string]uint32)
+		ownedTokens = make(map[string]*CountAndAgent)
 		itemStatus.Owners[buyerAccount] = ownedTokens
 	}
 	for tokenHash := range itemInfo.Item.Templates {
-		ownedTokens[tokenHash] += n
+		ownedTokens[tokenHash].Count += n
 	}
 
 }
 
-// UseDToken is called by buyer
+// UseDToken is called by seller, but signed by buyer
 func (c *DDXFContract) UseDToken(resourceID string, account ddxf.OntID, tokenHash string, n uint32) {
 	if !c.checkWitness(account) {
 		panic("account no witness")
@@ -192,18 +215,62 @@ func (c *DDXFContract) UseDToken(resourceID string, account ddxf.OntID, tokenHas
 		panic("resourceID not owned by account")
 	}
 
-	tokenCount := ownedTokens[tokenHash]
-	if tokenCount < n {
+	ownedToken := ownedTokens[tokenHash]
+	if ownedToken == nil || ownedToken.Count < n {
 		panic(fmt.Sprintf("resourceID owned not enough for token:%s", tokenHash))
 	}
 
-	if tokenCount == n {
+	if ownedToken.DecCount(n) {
 		delete(ownedTokens, tokenHash)
 		if len(ownedTokens) == 0 {
 			delete(itemStatus.Owners, account)
 		}
-	} else {
-		ownedTokens[tokenHash] = tokenCount - n
+	}
+}
+
+// UseDTokenSuitByAgent is called by agent
+func (c *DDXFContract) UseDTokenSuitByAgent(resourceID string, account, agent ddxf.OntID, n uint32) {
+	if !c.checkWitness(account) {
+		panic("agent no witness")
+	}
+
+	itemInfo, ok := c.sellerItemInfo[resourceID]
+	if !ok {
+		panic("resourceID not exists")
+	}
+
+	itemStatus, ok := c.sellerItemStatus[resourceID]
+	if !ok {
+		panic("resourceID not exists")
+	}
+
+	ownedTokens, ok := itemStatus.Owners[account]
+	if !ok {
+		panic("resourceID not owned by account")
+	}
+
+	for tokenHash := range itemInfo.Item.Templates {
+		ownedToken := ownedTokens[tokenHash]
+		if ownedToken == nil || ownedToken.Count < n {
+			panic(fmt.Sprintf("resourceID owned not enough for token:%s", tokenHash))
+		}
+		if ownedToken.Agents[agent] < n {
+			panic(fmt.Sprintf("resourceID not allowed enough(%d) for token:%s", ownedToken.Agents[agent], tokenHash))
+		}
+	}
+
+	var toDelete []string
+	for tokenHash, ownedToken := range ownedTokens {
+		if ownedToken.DecCountByAgent(n, agent) {
+			toDelete = append(toDelete, tokenHash)
+		}
+	}
+	for _, tokenHash := range toDelete {
+		delete(ownedTokens, tokenHash)
+	}
+
+	if len(ownedTokens) == 0 {
+		delete(itemStatus.Owners, account)
 	}
 }
 
@@ -229,17 +296,16 @@ func (c *DDXFContract) UseDTokenSuit(resourceID string, account ddxf.OntID, n ui
 	}
 
 	for tokenHash := range itemInfo.Item.Templates {
-		if ownedTokens[tokenHash] < n {
+		ownedToken := ownedTokens[tokenHash]
+		if ownedToken == nil || ownedToken.Count < n {
 			panic(fmt.Sprintf("resourceID owned not enough for token:%s", tokenHash))
 		}
 	}
 
 	var toDelete []string
-	for tokenHash, ownCount := range ownedTokens {
-		if ownCount == n {
+	for tokenHash, ownedToken := range ownedTokens {
+		if ownedToken.DecCount(n) {
 			toDelete = append(toDelete, tokenHash)
-		} else {
-			ownedTokens[tokenHash] = ownCount - n
 		}
 	}
 	for _, tokenHash := range toDelete {
@@ -249,6 +315,103 @@ func (c *DDXFContract) UseDTokenSuit(resourceID string, account ddxf.OntID, n ui
 	if len(ownedTokens) == 0 {
 		delete(itemStatus.Owners, account)
 	}
+}
+
+// SetDTokenSuitAgents is called by buyer
+func (c *DDXFContract) SetDTokenSuitAgents(resourceID string, account ddxf.OntID, agents []ddxf.OntID, n uint32) {
+	if !c.checkWitness(account) {
+		panic("account no witness")
+	}
+
+	itemStatus, ok := c.sellerItemStatus[resourceID]
+	if !ok {
+		panic("resourceID not exists")
+	}
+	ownedTokens, ok := itemStatus.Owners[account]
+	if !ok {
+		panic("resourceID not owned by account")
+	}
+
+	itemInfo, ok := c.sellerItemInfo[resourceID]
+	if !ok {
+		panic("resourceID not exists")
+	}
+
+	for tokenHash := range itemInfo.Item.Templates {
+		ownedToken := ownedTokens[tokenHash]
+		if ownedToken == nil || ownedToken.Count < n {
+			panic(fmt.Sprintf("resourceID owned not enough for token:%s", tokenHash))
+		}
+	}
+
+	for tokenHash := range itemInfo.Item.Templates {
+		agentAndCount := make(map[ddxf.OntID]uint32)
+		for _, agent := range agents {
+			agentAndCount[agent] = n
+		}
+		ownedTokens[tokenHash].Agents = agentAndCount
+	}
+
+	return
+}
+
+// AddDTokenSuitAgents is called by buyer
+func (c *DDXFContract) AddDTokenSuitAgents(resourceID string, account ddxf.OntID, agents []ddxf.OntID, n uint32) {
+	if !c.checkWitness(account) {
+		panic("account no witness")
+	}
+
+	itemStatus, ok := c.sellerItemStatus[resourceID]
+	if !ok {
+		panic("resourceID not exists")
+	}
+	ownedTokens, ok := itemStatus.Owners[account]
+	if !ok {
+		panic("resourceID not owned by account")
+	}
+
+	itemInfo, ok := c.sellerItemInfo[resourceID]
+	if !ok {
+		panic("resourceID not exists")
+	}
+
+	for tokenHash := range itemInfo.Item.Templates {
+		ownedToken := ownedTokens[tokenHash]
+		if ownedToken == nil || ownedToken.Count < n {
+			panic(fmt.Sprintf("resourceID owned not enough for token:%s", tokenHash))
+		}
+	}
+
+	for tokenHash := range itemInfo.Item.Templates {
+		ownedToken := ownedTokens[tokenHash]
+		for _, agent := range agents {
+			ownedToken.Agents[agent] += n
+		}
+	}
+	return
+}
+
+// RemoveDTokenSuitAgents is called by buyer
+func (c *DDXFContract) RemoveDTokenSuitAgents(resourceID string, account ddxf.OntID, agents []ddxf.OntID) {
+	if !c.checkWitness(account) {
+		panic("account no witness")
+	}
+
+	itemStatus, ok := c.sellerItemStatus[resourceID]
+	if !ok {
+		panic("resourceID not exists")
+	}
+	ownedTokens, ok := itemStatus.Owners[account]
+	if !ok {
+		panic("resourceID not owned by account")
+	}
+
+	for _, caa := range ownedTokens {
+		for _, agent := range agents {
+			delete(caa.Agents, agent)
+		}
+	}
+	return
 }
 
 func (c *DDXFContract) checkWitness(account ddxf.OntID) bool {

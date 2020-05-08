@@ -18,4 +18,8 @@ func TestHelper(t *testing.T) {
 	var decoded []byte
 	err = json.Unmarshal(bytes, &decoded)
 	assert2.Assert(t, err == nil && reflect.DeepEqual(decoded, origin))
+
+	bytes, err = Object2Bytes(0)
+	bytes2, err2 := json.Marshal(0)
+	assert2.Assert(t, err == nil && err2 == nil && reflect.DeepEqual(bytes, bytes2))
 }

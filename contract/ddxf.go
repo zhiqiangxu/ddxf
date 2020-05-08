@@ -14,7 +14,7 @@ type DTokenItem struct {
 	Fee         ddxf.Fee
 	ExpiredDate int64
 	Stocks      uint32
-	Templates   map[string]struct{}
+	Templates   map[string] /*tokenHash*/ struct{}
 }
 
 // RT for resource type
@@ -27,9 +27,10 @@ const (
 
 // ResourceDDO is ddo for resource
 type ResourceDDO struct {
-	Manager  ddxf.OntID // data owner id
-	Endpoint string     // data service provider uri
-	RT       RT
+	ResourceType RT
+	Manager      ddxf.OntID // data owner id
+	Endpoint     string     // data service provider uri
+	Hash         string     // required if len(Templates) > 1
 }
 
 // SellerItemInfo for ddxf
@@ -64,7 +65,11 @@ func (c *DDXFContract) DTokenSellerPublish(resourceID string, resourceDDO Resour
 		panic("resourceDDO empty")
 	}
 
-	switch resourceDDO.RT {
+	if len(item.Templates) == 0 {
+		panic("template empty")
+	}
+
+	switch resourceDDO.ResourceType {
 	case RTStaticFile:
 		for tokenHash := range item.Templates {
 			// desc hash : data hash
@@ -72,6 +77,10 @@ func (c *DDXFContract) DTokenSellerPublish(resourceID string, resourceDDO Resour
 				panic(fmt.Sprintf("invalid tokenHash %s", tokenHash))
 			}
 		}
+	}
+
+	if len(item.Templates) > 1 && resourceDDO.Hash == "" {
+		panic("ResourceDDO.Hash empty for batched template")
 	}
 
 	c.sellerItemInfo[resourceID] = SellerItemInfo{Item: item, ResourceDDO: resourceDDO}

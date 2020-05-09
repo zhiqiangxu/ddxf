@@ -31,11 +31,12 @@ const (
 
 // ResourceDDO is ddo for resource
 type ResourceDDO struct {
-	ResourceType RT
-	Manager      ddxf.OntID     // data owner id
-	Endpoint     string         // data service provider uri
-	DescHash     string         // required if len(Templates) > 1
-	dtc          DTokenContract // can be empty
+	ResourceType  RT
+	Manager       ddxf.OntID        // data owner id
+	Endpoint      string            // data service provider uri
+	TokenEndpoint map[string]string // endpoint for tokens
+	DescHash      string            // required if len(Templates) > 1
+	dtc           DTokenContract    // can be empty
 }
 
 // SellerItemInfo for ddxf
@@ -52,8 +53,6 @@ type DDXFContract struct {
 	dftDtc         DTokenContract
 }
 
-var emptyResourceDDO = ResourceDDO{}
-
 // NewDDXFContract is ctor for DDXFContract
 func NewDDXFContract(dftDtc DTokenContract) *DDXFContract {
 	return &DDXFContract{sellerItemSold: make(map[string]uint32), dftDtc: dftDtc}
@@ -65,8 +64,19 @@ func (c *DDXFContract) DTokenSellerPublish(resourceID string, resourceDDO Resour
 		panic("resourceID already exists")
 	}
 
-	if resourceDDO == emptyResourceDDO {
-		panic("resourceDDO empty")
+	if resourceDDO.Manager == "" {
+		panic("manager empty")
+	}
+	if resourceDDO.Endpoint == "" {
+		if len(resourceDDO.TokenEndpoint) == 0 {
+			panic("endpoint empty")
+		}
+
+		for tokenHash := range item.Templates {
+			if resourceDDO.TokenEndpoint[tokenHash] == "" {
+				panic(fmt.Sprintf("endpoint empty not tokenHash:%s", tokenHash))
+			}
+		}
 	}
 
 	if len(item.Templates) == 0 {
@@ -83,8 +93,8 @@ func (c *DDXFContract) DTokenSellerPublish(resourceID string, resourceDDO Resour
 		}
 	}
 
-	if len(item.Templates) > 1 && resourceDDO.DescHash == "" {
-		panic("ResourceDDO.DescHash empty for batched template")
+	if len(item.Templates) > 1 && len(resourceDDO.DescHash) != sha256.Size {
+		panic("ResourceDDO.DescHash invalid for batched template")
 	}
 
 	c.sellerItemInfo[resourceID] = SellerItemInfo{Item: item, ResourceDDO: resourceDDO}

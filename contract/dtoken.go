@@ -22,6 +22,67 @@ type DTokenContract interface {
 	RemoveTokenAgents(account ddxf.OntID, resourceID, tokenHash string, agents []ddxf.OntID)
 }
 
+// CountAndAgent for ddxf
+type CountAndAgent struct {
+	Count  uint32
+	Agents map[ddxf.OntID]uint32
+}
+
+// IncCount for increase Count
+func (caa *CountAndAgent) IncCount(n uint32) {
+	caa.Count += n
+}
+
+// CanDecCount checks whether can DecCount
+func (caa *CountAndAgent) CanDecCount(n uint32) bool {
+	return caa.Count >= n
+}
+
+// ClearAgents clears all agents
+func (caa *CountAndAgent) ClearAgents() {
+	for agent := range caa.Agents {
+		delete(caa.Agents, agent)
+	}
+}
+
+// RemoveAgents for CountAndAgent
+func (caa *CountAndAgent) RemoveAgents(agents []ddxf.OntID) {
+	for _, agent := range agents {
+		delete(caa.Agents, agent)
+	}
+}
+
+// AddAgents for CountAndAgent
+func (caa *CountAndAgent) AddAgents(agents []ddxf.OntID, n uint32) {
+	for _, agent := range agents {
+		caa.Agents[agent] += n
+	}
+}
+
+// DecCount for decrease Count
+func (caa *CountAndAgent) DecCount(n uint32) (usedup bool) {
+	caa.Count -= n
+	usedup = caa.Count == 0
+	return
+}
+
+// CanDecCountByAgent checks whether agent can decrease Count
+func (caa *CountAndAgent) CanDecCountByAgent(n uint32, agent ddxf.OntID) bool {
+	return caa.Agents[agent] >= n
+}
+
+// DecCountByAgent for decrease Count by agent
+func (caa *CountAndAgent) DecCountByAgent(n uint32, agent ddxf.OntID) (usedup bool) {
+	caa.Count -= n
+	caa.Agents[agent] -= n
+	if caa.Agents[agent] == 0 {
+		delete(caa.Agents, agent)
+	}
+
+	usedup = caa.Count == 0
+	return
+}
+
 type dTokenContract struct {
 	Owners map[string]map[ddxf.OntID]map[string]*CountAndAgent
 }

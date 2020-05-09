@@ -31,9 +31,10 @@ const (
 // ResourceDDO is ddo for resource
 type ResourceDDO struct {
 	ResourceType RT
-	Manager      ddxf.OntID // data owner id
-	Endpoint     string     // data service provider uri
-	DescHash     string     // required if len(Templates) > 1
+	Manager      ddxf.OntID     // data owner id
+	Endpoint     string         // data service provider uri
+	DescHash     string         // required if len(Templates) > 1
+	dtc          DTokenContract // can be empty
 }
 
 // SellerItemInfo for ddxf
@@ -43,79 +44,18 @@ type SellerItemInfo struct {
 	ResourceDDO ResourceDDO
 }
 
-// CountAndAgent for ddxf
-type CountAndAgent struct {
-	Count  uint32
-	Agents map[ddxf.OntID]uint32
-}
-
-// IncCount for increase Count
-func (caa *CountAndAgent) IncCount(n uint32) {
-	caa.Count += n
-}
-
-// CanDecCount checks whether can DecCount
-func (caa *CountAndAgent) CanDecCount(n uint32) bool {
-	return caa.Count >= n
-}
-
-// ClearAgents clears all agents
-func (caa *CountAndAgent) ClearAgents() {
-	for agent := range caa.Agents {
-		delete(caa.Agents, agent)
-	}
-}
-
-// RemoveAgents for CountAndAgent
-func (caa *CountAndAgent) RemoveAgents(agents []ddxf.OntID) {
-	for _, agent := range agents {
-		delete(caa.Agents, agent)
-	}
-}
-
-// AddAgents for CountAndAgent
-func (caa *CountAndAgent) AddAgents(agents []ddxf.OntID, n uint32) {
-	for _, agent := range agents {
-		caa.Agents[agent] += n
-	}
-}
-
-// DecCount for decrease Count
-func (caa *CountAndAgent) DecCount(n uint32) (usedup bool) {
-	caa.Count -= n
-	usedup = caa.Count == 0
-	return
-}
-
-// CanDecCountByAgent checks whether agent can decrease Count
-func (caa *CountAndAgent) CanDecCountByAgent(n uint32, agent ddxf.OntID) bool {
-	return caa.Agents[agent] >= n
-}
-
-// DecCountByAgent for decrease Count by agent
-func (caa *CountAndAgent) DecCountByAgent(n uint32, agent ddxf.OntID) (usedup bool) {
-	caa.Count -= n
-	caa.Agents[agent] -= n
-	if caa.Agents[agent] == 0 {
-		delete(caa.Agents, agent)
-	}
-
-	usedup = caa.Count == 0
-	return
-}
-
 // DDXFContract for ddxf
 type DDXFContract struct {
 	sellerItemInfo map[string]SellerItemInfo
 	sellerItemSold map[string]uint32
-	dtc            DTokenContract
+	dftDtc         DTokenContract
 }
 
 var emptyResourceDDO = ResourceDDO{}
 
 // NewDDXFContract is ctor for DDXFContract
-func NewDDXFContract(dtc DTokenContract) *DDXFContract {
-	return &DDXFContract{sellerItemSold: make(map[string]uint32), dtc: dtc}
+func NewDDXFContract(dftDtc DTokenContract) *DDXFContract {
+	return &DDXFContract{sellerItemSold: make(map[string]uint32), dftDtc: dftDtc}
 }
 
 // DTokenSellerPublish is called by DTokenSeller
@@ -143,7 +83,7 @@ func (c *DDXFContract) DTokenSellerPublish(resourceID string, resourceDDO Resour
 	}
 
 	if len(item.Templates) > 1 && resourceDDO.DescHash == "" {
-		panic("ResourceDDO.Hash empty for batched template")
+		panic("ResourceDDO.DescHash empty for batched template")
 	}
 
 	c.sellerItemInfo[resourceID] = SellerItemInfo{Item: item, ResourceDDO: resourceDDO}
@@ -168,7 +108,11 @@ func (c *DDXFContract) BuyDTokenFromReseller(resourceID string, n uint32, buyerA
 		panic("buyerAccount balance not enough")
 	}
 
-	c.dtc.TransferDToken(resellerAccount, buyerAccount, resourceID, itemInfo.Item.Templates, n)
+	dtc := itemInfo.ResourceDDO.dtc
+	if dtc == nil {
+		dtc = c.dftDtc
+	}
+	dtc.TransferDToken(resellerAccount, buyerAccount, resourceID, itemInfo.Item.Templates, n)
 
 }
 
@@ -201,7 +145,12 @@ func (c *DDXFContract) BuyDToken(resourceID string, n uint32, buyerAccount ddxf.
 	}
 
 	c.sellerItemSold[resourceID] += n
-	c.dtc.GenerateDToken(buyerAccount, resourceID, itemInfo.Item.Templates, n)
+
+	dtc := itemInfo.ResourceDDO.dtc
+	if dtc == nil {
+		dtc = c.dftDtc
+	}
+	dtc.GenerateDToken(buyerAccount, resourceID, itemInfo.Item.Templates, n)
 
 }
 
@@ -211,7 +160,16 @@ func (c *DDXFContract) UseToken(resourceID string, account ddxf.OntID, tokenHash
 		panic("account no witness")
 	}
 
-	c.dtc.UseToken(account, resourceID, tokenHash, n)
+	itemInfo, ok := c.sellerItemInfo[resourceID]
+	if !ok {
+		panic("resourceID not exists")
+	}
+
+	dtc := itemInfo.ResourceDDO.dtc
+	if dtc == nil {
+		dtc = c.dftDtc
+	}
+	dtc.UseToken(account, resourceID, tokenHash, n)
 }
 
 // UseTokenByAgent is called by agent
@@ -220,7 +178,16 @@ func (c *DDXFContract) UseTokenByAgent(resourceID string, account, agent ddxf.On
 		panic("agent no witness")
 	}
 
-	c.dtc.UseTokenByAgent(account, agent, resourceID, tokenHash, n)
+	itemInfo, ok := c.sellerItemInfo[resourceID]
+	if !ok {
+		panic("resourceID not exists")
+	}
+
+	dtc := itemInfo.ResourceDDO.dtc
+	if dtc == nil {
+		dtc = c.dftDtc
+	}
+	dtc.UseTokenByAgent(account, agent, resourceID, tokenHash, n)
 }
 
 // SetDTokenAgents is called by buyer
@@ -229,7 +196,16 @@ func (c *DDXFContract) SetDTokenAgents(resourceID string, account ddxf.OntID, ag
 		panic("account no witness")
 	}
 
-	c.dtc.SetAgents(account, resourceID, agents, n)
+	itemInfo, ok := c.sellerItemInfo[resourceID]
+	if !ok {
+		panic("resourceID not exists")
+	}
+
+	dtc := itemInfo.ResourceDDO.dtc
+	if dtc == nil {
+		dtc = c.dftDtc
+	}
+	dtc.SetAgents(account, resourceID, agents, n)
 
 	return
 }
@@ -240,7 +216,16 @@ func (c *DDXFContract) AddDTokenAgents(resourceID string, account ddxf.OntID, ag
 		panic("account no witness")
 	}
 
-	c.dtc.AddAgents(account, resourceID, agents, n)
+	itemInfo, ok := c.sellerItemInfo[resourceID]
+	if !ok {
+		panic("resourceID not exists")
+	}
+
+	dtc := itemInfo.ResourceDDO.dtc
+	if dtc == nil {
+		dtc = c.dftDtc
+	}
+	dtc.AddAgents(account, resourceID, agents, n)
 
 	return
 }
@@ -251,7 +236,16 @@ func (c *DDXFContract) RemoveDTokenAgents(resourceID string, account ddxf.OntID,
 		panic("account no witness")
 	}
 
-	c.dtc.RemoveAgents(account, resourceID, agents)
+	itemInfo, ok := c.sellerItemInfo[resourceID]
+	if !ok {
+		panic("resourceID not exists")
+	}
+
+	dtc := itemInfo.ResourceDDO.dtc
+	if dtc == nil {
+		dtc = c.dftDtc
+	}
+	dtc.RemoveAgents(account, resourceID, agents)
 	return
 }
 

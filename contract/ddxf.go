@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"strings"
+	"crypto/sha256"
+	"hash/crc32"
 
 	"github.com/zhiqiangxu/ddxf"
 )
@@ -75,8 +76,8 @@ func (c *DDXFContract) DTokenSellerPublish(resourceID string, resourceDDO Resour
 	switch resourceDDO.ResourceType {
 	case RTStaticFile:
 		for tokenHash := range item.Templates {
-			// desc hash : data hash
-			if len(strings.Split(tokenHash, ":")) != 2 {
+			// desc hash + data hash
+			if len(tokenHash) != sha256.Size+crc32.Size {
 				panic(fmt.Sprintf("invalid tokenHash %s", tokenHash))
 			}
 		}

@@ -3,6 +3,7 @@ package ddxf
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"hash/crc32"
 
 	"github.com/zhiqiangxu/util"
 )
@@ -40,14 +41,20 @@ func HashObject(obj interface{}) (h string, err error) {
 		return
 	}
 
-	h = HashBytes(bytes)
+	h = Sha256Bytes(bytes)
 	return
 }
 
-// HashBytes converts any byte sequence to a hash string
-func HashBytes(bytes []byte) string {
+// Sha256Bytes converts any byte sequence to a sha256 hash string
+func Sha256Bytes(bytes []byte) string {
 	h := sha256.New()
 	h.Write(bytes)
 	hash := h.Sum(nil)
 	return util.String(hash)
+}
+
+// Crc32Bytes converts any byte sequence to a crc32 hash string
+func Crc32Bytes(data []byte) []byte {
+	s := crc32.ChecksumIEEE(data)
+	return []byte{byte(s >> 24), byte(s >> 16), byte(s >> 8), byte(s)}
 }

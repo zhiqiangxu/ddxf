@@ -60,13 +60,17 @@ func NewDDXFContract(dftDtc DTokenContract) *DDXFContract {
 
 // DTokenSellerPublish is called by DTokenSeller
 func (c *DDXFContract) DTokenSellerPublish(resourceID string, resourceDDO ResourceDDO, item DTokenItem) {
+	if resourceDDO.Manager == "" {
+		panic("manager empty")
+	}
+	if !c.checkWitness(resourceDDO.Manager) {
+		panic("manager no witness")
+	}
+
 	if _, ok := c.sellerItemInfo[resourceID]; ok {
 		panic("resourceID already exists")
 	}
 
-	if resourceDDO.Manager == "" {
-		panic("manager empty")
-	}
 	if resourceDDO.Endpoint == "" {
 		if len(resourceDDO.TokenEndpoint) == 0 {
 			panic("endpoint empty")

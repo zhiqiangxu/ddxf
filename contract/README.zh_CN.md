@@ -16,7 +16,7 @@
 
 2. 买家通过`BuyDToken`购买卖家的**商品**，或者通过`BuyDTokenFromReseller`从已购买但未使用的买家购买
 
-3. 买家购买后，卖家通过`UseToken`对DToken中的单件**物品**进行核销，并在链外实现买家的权益
+3. 买家想取货时，卖家通过`UseToken`对DToken中的单件**物品**进行核销，并在链外实现买家的权益
     1. 需要注意的是，**链上核销**与**链外实现权益**，天然是非原子的，也是纠纷的源头，所以买卖双方需要各自留好证据。
 
 4. 对于加工服务的场景，买家可以通过`SetDTokenAgents`或者`AddDTokenAgents`设置**商品**的`agent`，这样`agent`便可以通过`UseTokenByAgent`代替买家消费了；买家也可以通过`RemoveDTokenAgents`取消`agent`的代理资格。

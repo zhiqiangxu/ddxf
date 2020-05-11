@@ -31,12 +31,13 @@ const (
 
 // ResourceDDO is ddo for resource
 type ResourceDDO struct {
-	ResourceType  RT
-	Manager       ddxf.OntID        // data owner id
-	Endpoint      string            // data service provider uri
-	TokenEndpoint map[string]string // endpoint for tokens
-	DescHash      string            // required if len(Templates) > 1
-	dtc           DTokenContract    // can be empty
+	Manager           ddxf.OntID // data owner id
+	ResourceType      RT
+	Endpoint          string            // data service provider uri
+	TokenEndpoint     map[string]string // endpoint for tokens
+	TokenResourceType map[string]RT     // RT for tokens
+	DescHash          string            // required if len(Templates) > 1
+	dtc               DTokenContract    // can be empty
 }
 
 // SellerItemInfo for ddxf
@@ -87,9 +88,14 @@ func (c *DDXFContract) DTokenSellerPublish(resourceID string, resourceDDO Resour
 		panic("template empty")
 	}
 
-	switch resourceDDO.ResourceType {
-	case RTStaticFile:
-		for tokenHash := range item.Templates {
+	for tokenHash := range item.Templates {
+		rt, ok := resourceDDO.TokenResourceType[tokenHash]
+		if !ok {
+			rt = resourceDDO.ResourceType
+		}
+
+		switch rt {
+		case RTStaticFile:
 			// desc hash + data hash
 			if len(tokenHash) != sha256.Size+crc32.Size {
 				panic(fmt.Sprintf("invalid tokenHash %s", tokenHash))

@@ -10,11 +10,12 @@ type FeeSplitModel struct {
 // Marketplace ...
 // this contract is agreed by seller and marketplace
 type Marketplace interface {
-	SetFeeSplitModel(FeeSplitModel)
-	GetFeeSplitModel() FeeSplitModel
+	// should sign by both seller and mp
+	SetFeeSplitModel(sellerAcc ddxf.OntID, model FeeSplitModel)
+	GetFeeSplitModel(sellerAcc ddxf.OntID) FeeSplitModel
 
-	Settle()
+	Settle(sellerAcc ddxf.OntID)
+	TransferAmount(buyerAcc, sellerAcc ddxf.OntID, fee ddxf.Fee, n uint32)
 
 	MPAccount() ddxf.OntID
-	SellerAccount() ddxf.OntID
 }

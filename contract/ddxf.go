@@ -40,6 +40,26 @@ type ResourceDDO struct {
 	dtc               DTokenContract    // can be empty
 }
 
+// ResourceTypeForToken ...
+func (ddo *ResourceDDO) ResourceTypeForToken(tokenHash string) RT {
+	rt, ok := ddo.TokenResourceType[tokenHash]
+	if ok {
+		return rt
+	}
+
+	return ddo.ResourceType
+}
+
+// EndpointForToken ...
+func (ddo *ResourceDDO) EndpointForToken(tokenHash string) string {
+	ep, ok := ddo.TokenEndpoint[tokenHash]
+	if ok {
+		return ep
+	}
+
+	return ddo.Endpoint
+}
+
 // SellerItemInfo for ddxf
 // immutable
 type SellerItemInfo struct {
@@ -89,10 +109,7 @@ func (c *DDXFContract) DTokenSellerPublish(resourceID string, resourceDDO Resour
 	}
 
 	for tokenHash := range item.Templates {
-		rt, ok := resourceDDO.TokenResourceType[tokenHash]
-		if !ok {
-			rt = resourceDDO.ResourceType
-		}
+		rt := resourceDDO.ResourceTypeForToken(tokenHash)
 
 		switch rt {
 		case RTStaticFile:

@@ -37,7 +37,8 @@ type ResourceDDO struct {
 	TokenEndpoint     map[string]string // endpoint for tokens
 	TokenResourceType map[string]RT     // RT for tokens
 	DescHash          string            // required if len(Templates) > 1
-	dtc               DTokenContract    // can be empty
+	DTC               DTokenContract    // can be empty
+	MP                Marketplace       // can be empty
 }
 
 // ResourceTypeForToken ...
@@ -142,11 +143,11 @@ func (c *DDXFContract) BuyDTokenFromReseller(resourceID string, n uint32, buyerA
 		panic("resourceID not exists")
 	}
 
-	if !c.transferFeeFromAccount(buyerAccount, resellerAccount, itemInfo.Item.Fee, n) {
+	if !c.transferFeeFromAccount(buyerAccount, resellerAccount, nil, itemInfo.Item.Fee, n) {
 		panic("buyerAccount balance not enough")
 	}
 
-	dtc := itemInfo.ResourceDDO.dtc
+	dtc := itemInfo.ResourceDDO.DTC
 	if dtc == nil {
 		dtc = c.dftDtc
 	}
@@ -178,13 +179,13 @@ func (c *DDXFContract) BuyDToken(resourceID string, n uint32, buyerAccount ddxf.
 		panic("resourceID not enough")
 	}
 
-	if !c.transferFeeFromAccount(buyerAccount, itemInfo.ResourceDDO.Manager, itemInfo.Item.Fee, n) {
+	if !c.transferFeeFromAccount(buyerAccount, itemInfo.ResourceDDO.Manager, itemInfo.ResourceDDO.MP, itemInfo.Item.Fee, n) {
 		panic("balance not enough")
 	}
 
 	c.sellerItemSold[resourceID] += n
 
-	dtc := itemInfo.ResourceDDO.dtc
+	dtc := itemInfo.ResourceDDO.DTC
 	if dtc == nil {
 		dtc = c.dftDtc
 	}
@@ -203,7 +204,7 @@ func (c *DDXFContract) UseToken(resourceID string, account ddxf.OntID, tokenHash
 		panic("resourceID not exists")
 	}
 
-	dtc := itemInfo.ResourceDDO.dtc
+	dtc := itemInfo.ResourceDDO.DTC
 	if dtc == nil {
 		dtc = c.dftDtc
 	}
@@ -221,7 +222,7 @@ func (c *DDXFContract) UseTokenByAgent(resourceID string, account, agent ddxf.On
 		panic("resourceID not exists")
 	}
 
-	dtc := itemInfo.ResourceDDO.dtc
+	dtc := itemInfo.ResourceDDO.DTC
 	if dtc == nil {
 		dtc = c.dftDtc
 	}
@@ -239,7 +240,7 @@ func (c *DDXFContract) SetDTokenAgents(resourceID string, account ddxf.OntID, ag
 		panic("resourceID not exists")
 	}
 
-	dtc := itemInfo.ResourceDDO.dtc
+	dtc := itemInfo.ResourceDDO.DTC
 	if dtc == nil {
 		dtc = c.dftDtc
 	}
@@ -259,7 +260,7 @@ func (c *DDXFContract) AddDTokenAgents(resourceID string, account ddxf.OntID, ag
 		panic("resourceID not exists")
 	}
 
-	dtc := itemInfo.ResourceDDO.dtc
+	dtc := itemInfo.ResourceDDO.DTC
 	if dtc == nil {
 		dtc = c.dftDtc
 	}
@@ -279,7 +280,7 @@ func (c *DDXFContract) RemoveDTokenAgents(resourceID string, account ddxf.OntID,
 		panic("resourceID not exists")
 	}
 
-	dtc := itemInfo.ResourceDDO.dtc
+	dtc := itemInfo.ResourceDDO.DTC
 	if dtc == nil {
 		dtc = c.dftDtc
 	}
@@ -291,7 +292,7 @@ func (c *DDXFContract) checkWitness(account ddxf.OntID) bool {
 	return true
 }
 
-func (c *DDXFContract) transferFeeFromAccount(buyerAccount, sellerAccount ddxf.OntID, fee ddxf.Fee, n uint32) bool {
+func (c *DDXFContract) transferFeeFromAccount(buyerAccount, sellerAccount ddxf.OntID, mp Marketplace, fee ddxf.Fee, n uint32) bool {
 	return false
 }
 

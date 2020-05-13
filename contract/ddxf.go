@@ -23,11 +23,6 @@ func (did DataIDs) Split() (ids []ddxf.OntID) {
 	return
 }
 
-// Join ...
-func (did DataIDs) Join(dataIDs ...ddxf.OntID) {
-
-}
-
 // TokenTemplate ...
 type TokenTemplate struct {
 	DataIDs   DataIDs // can be empty

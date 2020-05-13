@@ -9,17 +9,17 @@ import (
 // DTokenContract for dtoken
 type DTokenContract interface {
 	GenerateDToken(account ddxf.OntID, resourceID string, Templates TokenTemplates, n uint32)
-	UseToken(account ddxf.OntID, resourceID string, tokenHash string, n uint32)
-	UseTokenByAgent(account, agent ddxf.OntID, resourceID string, tokenHash string, n uint32)
+	UseToken(account ddxf.OntID, resourceID string, tokenTemplate TokenTemplate, n uint32)
+	UseTokenByAgent(account, agent ddxf.OntID, resourceID string, tokenTemplate TokenTemplate, n uint32)
 	// for reseller
 	TransferDToken(fromAccount, toAccount ddxf.OntID, resourceID string, Templates TokenTemplates, n uint32)
 
 	SetAgents(account ddxf.OntID, resourceID string, agents []ddxf.OntID, n uint32)
-	SetTokenAgents(account ddxf.OntID, resourceID, tokenHash string, agents []ddxf.OntID, n uint32)
+	SetTokenAgents(account ddxf.OntID, resourceID string, tokenTemplate TokenTemplate, agents []ddxf.OntID, n uint32)
 	AddAgents(account ddxf.OntID, resourceID string, agents []ddxf.OntID, n uint32)
-	AddTokenAgents(account ddxf.OntID, resourceID, tokenHash string, agents []ddxf.OntID, n uint32)
+	AddTokenAgents(account ddxf.OntID, resourceID string, tokenTemplate TokenTemplate, agents []ddxf.OntID, n uint32)
 	RemoveAgents(account ddxf.OntID, resourceID string, agents []ddxf.OntID)
-	RemoveTokenAgents(account ddxf.OntID, resourceID, tokenHash string, agents []ddxf.OntID)
+	RemoveTokenAgents(account ddxf.OntID, resourceID string, tokenTemplate TokenTemplate, agents []ddxf.OntID)
 }
 
 // CountAndAgent for ddxf
@@ -84,38 +84,38 @@ func (caa *CountAndAgent) DecCountByAgent(n uint32, agent ddxf.OntID) (usedup bo
 }
 
 type dTokenContract struct {
-	Owners map[string]map[ddxf.OntID]map[string]*CountAndAgent
+	Owners map[string]map[ddxf.OntID]map[TokenTemplate]*CountAndAgent
 }
 
 // NewDTokenContract is default implmentation for DTokenContract
 func NewDTokenContract() DTokenContract {
-	return &dTokenContract{Owners: make(map[string]map[ddxf.OntID]map[string]*CountAndAgent)}
+	return &dTokenContract{Owners: make(map[string]map[ddxf.OntID]map[TokenTemplate]*CountAndAgent)}
 }
 
 func (d *dTokenContract) GenerateDToken(account ddxf.OntID, resourceID string, templates TokenTemplates, n uint32) {
 	owners := d.Owners[resourceID]
 	if owners == nil {
-		owners = make(map[ddxf.OntID]map[string]*CountAndAgent)
+		owners = make(map[ddxf.OntID]map[TokenTemplate]*CountAndAgent)
 		d.Owners[resourceID] = owners
 	}
 	accountTokens := owners[account]
 	if accountTokens == nil {
-		accountTokens = make(map[string]*CountAndAgent)
+		accountTokens = make(map[TokenTemplate]*CountAndAgent)
 		owners[account] = accountTokens
 	}
 
-	for tokenHash := range templates {
-		caa := accountTokens[tokenHash]
+	for tokenTemplate := range templates {
+		caa := accountTokens[tokenTemplate]
 		if caa == nil {
 			caa = &CountAndAgent{Agents: make(map[ddxf.OntID]uint32)}
-			accountTokens[tokenHash] = caa
+			accountTokens[tokenTemplate] = caa
 		}
 		caa.Count += n
 	}
 	return
 }
 
-func (d *dTokenContract) UseToken(account ddxf.OntID, resourceID string, tokenHash string, n uint32) {
+func (d *dTokenContract) UseToken(account ddxf.OntID, resourceID string, tokenTemplate TokenTemplate, n uint32) {
 	owners := d.Owners[resourceID]
 	if owners == nil {
 		panic("resourceID not exists")
@@ -125,17 +125,17 @@ func (d *dTokenContract) UseToken(account ddxf.OntID, resourceID string, tokenHa
 		panic("account has no resourceID")
 	}
 
-	caa := accountTokens[tokenHash]
+	caa := accountTokens[tokenTemplate]
 	if caa == nil {
-		panic("account has no tokenHash")
+		panic("account has no tokenTemplate")
 	}
 
 	if !caa.CanDecCount(n) {
-		panic("tokenHash not enough")
+		panic("tokenTemplate not enough")
 	}
 
 	if caa.DecCount(n) {
-		delete(accountTokens, tokenHash)
+		delete(accountTokens, tokenTemplate)
 		if len(accountTokens) == 0 {
 			delete(owners, account)
 		}
@@ -143,7 +143,7 @@ func (d *dTokenContract) UseToken(account ddxf.OntID, resourceID string, tokenHa
 	return
 }
 
-func (d *dTokenContract) UseTokenByAgent(account, agent ddxf.OntID, resourceID string, tokenHash string, n uint32) {
+func (d *dTokenContract) UseTokenByAgent(account, agent ddxf.OntID, resourceID string, tokenTemplate TokenTemplate, n uint32) {
 	owners := d.Owners[resourceID]
 	if owners == nil {
 		panic("resourceID not exists")
@@ -153,20 +153,20 @@ func (d *dTokenContract) UseTokenByAgent(account, agent ddxf.OntID, resourceID s
 		panic("account has no resourceID")
 	}
 
-	caa := accountTokens[tokenHash]
+	caa := accountTokens[tokenTemplate]
 	if caa == nil {
-		panic("account has no tokenHash")
+		panic("account has no tokenTemplate")
 	}
 
 	if !caa.CanDecCount(n) {
-		panic("tokenHash not enough")
+		panic("tokenTemplate not enough")
 	}
 	if !caa.CanDecCountByAgent(n, agent) {
 		panic("agent count not enough")
 	}
 
 	if caa.DecCountByAgent(n, agent) {
-		delete(accountTokens, tokenHash)
+		delete(accountTokens, tokenTemplate)
 		if len(accountTokens) == 0 {
 			delete(owners, account)
 		}
@@ -196,7 +196,7 @@ func (d *dTokenContract) TransferDToken(fromAccount, toAccount ddxf.OntID, resou
 
 	toAccountTokens := owners[toAccount]
 	if toAccountTokens == nil {
-		toAccountTokens = make(map[string]*CountAndAgent)
+		toAccountTokens = make(map[TokenTemplate]*CountAndAgent)
 		owners[toAccount] = toAccountTokens
 	}
 
@@ -232,7 +232,7 @@ func (d *dTokenContract) SetAgents(account ddxf.OntID, resourceID string, agents
 	return
 }
 
-func (d *dTokenContract) SetTokenAgents(account ddxf.OntID, resourceID, tokenHash string, agents []ddxf.OntID, n uint32) {
+func (d *dTokenContract) SetTokenAgents(account ddxf.OntID, resourceID string, tokenTemplate TokenTemplate, agents []ddxf.OntID, n uint32) {
 	owners := d.Owners[resourceID]
 	if owners == nil {
 		panic("resourceID not exists")
@@ -242,9 +242,9 @@ func (d *dTokenContract) SetTokenAgents(account ddxf.OntID, resourceID, tokenHas
 		panic("account has no resourceID")
 	}
 
-	caa := accountTokens[tokenHash]
+	caa := accountTokens[tokenTemplate]
 	if caa == nil {
-		panic("account has no tokenHash")
+		panic("account has no tokenTemplate")
 	}
 
 	caa.ClearAgents()
@@ -269,7 +269,7 @@ func (d *dTokenContract) AddAgents(account ddxf.OntID, resourceID string, agents
 	return
 }
 
-func (d *dTokenContract) AddTokenAgents(account ddxf.OntID, resourceID, tokenHash string, agents []ddxf.OntID, n uint32) {
+func (d *dTokenContract) AddTokenAgents(account ddxf.OntID, resourceID string, tokenTemplate TokenTemplate, agents []ddxf.OntID, n uint32) {
 	owners := d.Owners[resourceID]
 	if owners == nil {
 		panic("resourceID not exists")
@@ -279,9 +279,9 @@ func (d *dTokenContract) AddTokenAgents(account ddxf.OntID, resourceID, tokenHas
 		panic("account has no resourceID")
 	}
 
-	caa := accountTokens[tokenHash]
+	caa := accountTokens[tokenTemplate]
 	if caa == nil {
-		panic("account has no tokenHash")
+		panic("account has no tokenTemplate")
 	}
 
 	caa.AddAgents(agents, n)
@@ -305,7 +305,7 @@ func (d *dTokenContract) RemoveAgents(account ddxf.OntID, resourceID string, age
 	return
 }
 
-func (d *dTokenContract) RemoveTokenAgents(account ddxf.OntID, resourceID, tokenHash string, agents []ddxf.OntID) {
+func (d *dTokenContract) RemoveTokenAgents(account ddxf.OntID, resourceID string, tokenTemplate TokenTemplate, agents []ddxf.OntID) {
 	owners := d.Owners[resourceID]
 	if owners == nil {
 		panic("resourceID not exists")
@@ -315,9 +315,9 @@ func (d *dTokenContract) RemoveTokenAgents(account ddxf.OntID, resourceID, token
 		panic("account has no resourceID")
 	}
 
-	caa := accountTokens[tokenHash]
+	caa := accountTokens[tokenTemplate]
 	if caa == nil {
-		panic("account has no tokenHash")
+		panic("account has no tokenTemplate")
 	}
 
 	caa.RemoveAgents(agents)

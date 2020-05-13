@@ -7,11 +7,35 @@ import (
 	"crypto/sha256"
 	"hash/crc32"
 
+	"strings"
+
 	"github.com/zhiqiangxu/ddxf"
 )
 
+// DataIDs ...
+type DataIDs string
+
+// Split ...
+func (did DataIDs) Split() (ids []ddxf.OntID) {
+	for _, part := range strings.Split(string(did), ";") {
+		ids = append(ids, ddxf.OntID(part))
+	}
+	return
+}
+
+// Join ...
+func (did DataIDs) Join(dataIDs ...ddxf.OntID) {
+
+}
+
+// TokenTemplate ...
+type TokenTemplate struct {
+	DataIDs   DataIDs // can be empty
+	TokenHash string
+}
+
 // TokenTemplates for ddxf
-type TokenTemplates map[string] /*tokenHash*/ struct{}
+type TokenTemplates map[TokenTemplate]struct{}
 
 // DTokenItem for ddxf
 type DTokenItem struct {
@@ -33,18 +57,18 @@ const (
 type ResourceDDO struct {
 	Manager           ddxf.OntID // data owner id
 	ResourceType      RT
-	Endpoint          string            // data service provider uri
-	TokenEndpoint     map[string]string // endpoint for tokens
-	TokenResourceType map[string]RT     // RT for tokens
-	DescHash          string            // required if len(Templates) > 1
-	DTC               DTokenContract    // can be empty
-	MP                Marketplace       // can be empty
-	Split             SplitPolicy       // can be empty
+	Endpoint          string                   // data service provider uri
+	TokenEndpoint     map[TokenTemplate]string // endpoint for tokens
+	TokenResourceType map[TokenTemplate]RT     // RT for tokens
+	DescHash          string                   // required if len(Templates) > 1
+	DTC               DTokenContract           // can be empty
+	MP                Marketplace              // can be empty
+	Split             SplitPolicy              // can be empty
 }
 
 // ResourceTypeForToken ...
-func (ddo *ResourceDDO) ResourceTypeForToken(tokenHash string) RT {
-	rt, ok := ddo.TokenResourceType[tokenHash]
+func (ddo *ResourceDDO) ResourceTypeForToken(tokenTemplate TokenTemplate) RT {
+	rt, ok := ddo.TokenResourceType[tokenTemplate]
 	if ok {
 		return rt
 	}
@@ -53,8 +77,8 @@ func (ddo *ResourceDDO) ResourceTypeForToken(tokenHash string) RT {
 }
 
 // EndpointForToken ...
-func (ddo *ResourceDDO) EndpointForToken(tokenHash string) string {
-	ep, ok := ddo.TokenEndpoint[tokenHash]
+func (ddo *ResourceDDO) EndpointForToken(tokenTemplate TokenTemplate) string {
+	ep, ok := ddo.TokenEndpoint[tokenTemplate]
 	if ok {
 		return ep
 	}
@@ -99,9 +123,9 @@ func (c *DDXFContract) DTokenSellerPublish(resourceID string, resourceDDO Resour
 			panic("endpoint empty")
 		}
 
-		for tokenHash := range item.Templates {
-			if resourceDDO.TokenEndpoint[tokenHash] == "" {
-				panic(fmt.Sprintf("endpoint empty not tokenHash:%s", tokenHash))
+		for tokenTemplate := range item.Templates {
+			if resourceDDO.TokenEndpoint[tokenTemplate] == "" {
+				panic(fmt.Sprintf("endpoint empty not tokenHash:%v", tokenTemplate))
 			}
 		}
 	}
@@ -110,14 +134,14 @@ func (c *DDXFContract) DTokenSellerPublish(resourceID string, resourceDDO Resour
 		panic("template empty")
 	}
 
-	for tokenHash := range item.Templates {
-		rt := resourceDDO.ResourceTypeForToken(tokenHash)
+	for tokenTemplate := range item.Templates {
+		rt := resourceDDO.ResourceTypeForToken(tokenTemplate)
 
 		switch rt {
 		case RTStaticFile:
 			// desc hash + data hash
-			if len(tokenHash) != sha256.Size+crc32.Size {
-				panic(fmt.Sprintf("invalid tokenHash %s", tokenHash))
+			if len(tokenTemplate.TokenHash) != sha256.Size+crc32.Size {
+				panic(fmt.Sprintf("invalid tokenHash %s", tokenTemplate.TokenHash))
 			}
 		}
 	}
@@ -195,7 +219,7 @@ func (c *DDXFContract) BuyDToken(resourceID string, n uint32, buyerAccount ddxf.
 }
 
 // UseToken is called by buyer
-func (c *DDXFContract) UseToken(resourceID string, account ddxf.OntID, tokenHash string, n uint32) {
+func (c *DDXFContract) UseToken(resourceID string, account ddxf.OntID, tokenTemplate TokenTemplate, n uint32) {
 	if !c.checkWitness(account) {
 		panic("account no witness")
 	}
@@ -209,11 +233,11 @@ func (c *DDXFContract) UseToken(resourceID string, account ddxf.OntID, tokenHash
 	if dtc == nil {
 		dtc = c.dftDtc
 	}
-	dtc.UseToken(account, resourceID, tokenHash, n)
+	dtc.UseToken(account, resourceID, tokenTemplate, n)
 }
 
 // UseTokenByAgent is called by agent
-func (c *DDXFContract) UseTokenByAgent(resourceID string, account, agent ddxf.OntID, tokenHash string, n uint32) {
+func (c *DDXFContract) UseTokenByAgent(resourceID string, account, agent ddxf.OntID, tokenTemplate TokenTemplate, n uint32) {
 	if !c.checkWitness(agent) {
 		panic("agent no witness")
 	}
@@ -227,7 +251,7 @@ func (c *DDXFContract) UseTokenByAgent(resourceID string, account, agent ddxf.On
 	if dtc == nil {
 		dtc = c.dftDtc
 	}
-	dtc.UseTokenByAgent(account, agent, resourceID, tokenHash, n)
+	dtc.UseTokenByAgent(account, agent, resourceID, tokenTemplate, n)
 }
 
 // SetDTokenAgents is called by buyer

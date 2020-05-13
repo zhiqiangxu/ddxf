@@ -39,6 +39,7 @@ type ResourceDDO struct {
 	DescHash          string            // required if len(Templates) > 1
 	DTC               DTokenContract    // can be empty
 	MP                Marketplace       // can be empty
+	Split             SplitPolicy       // can be empty
 }
 
 // ResourceTypeForToken ...
@@ -143,7 +144,7 @@ func (c *DDXFContract) BuyDTokenFromReseller(resourceID string, n uint32, buyerA
 		panic("resourceID not exists")
 	}
 
-	if !c.transferFeeFromAccount(buyerAccount, resellerAccount, nil, itemInfo.Item.Fee, n) {
+	if !c.transferFeeFromAccount(buyerAccount, resellerAccount, nil, nil, itemInfo.Item.Fee, n) {
 		panic("buyerAccount balance not enough")
 	}
 
@@ -179,7 +180,7 @@ func (c *DDXFContract) BuyDToken(resourceID string, n uint32, buyerAccount ddxf.
 		panic("resourceID not enough")
 	}
 
-	if !c.transferFeeFromAccount(buyerAccount, itemInfo.ResourceDDO.Manager, itemInfo.ResourceDDO.MP, itemInfo.Item.Fee, n) {
+	if !c.transferFeeFromAccount(buyerAccount, itemInfo.ResourceDDO.Manager, itemInfo.ResourceDDO.MP, itemInfo.ResourceDDO.Split, itemInfo.Item.Fee, n) {
 		panic("balance not enough")
 	}
 
@@ -292,7 +293,7 @@ func (c *DDXFContract) checkWitness(account ddxf.OntID) bool {
 	return true
 }
 
-func (c *DDXFContract) transferFeeFromAccount(buyerAccount, sellerAccount ddxf.OntID, mp Marketplace, fee ddxf.Fee, n uint32) bool {
+func (c *DDXFContract) transferFeeFromAccount(buyerAccount, sellerAccount ddxf.OntID, mp Marketplace, split SplitPolicy, fee ddxf.Fee, n uint32) bool {
 	return false
 }
 

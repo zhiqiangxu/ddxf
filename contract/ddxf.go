@@ -134,10 +134,17 @@ func (c *DDXFContract) DTokenSellerPublish(resourceID string, resourceDDO Resour
 
 		switch rt {
 		case RTStaticFile:
-			// desc hash + data hash
-			if len(tokenTemplate.TokenHash) != sha256.Size+crc32.Size {
-				panic(fmt.Sprintf("invalid tokenHash %s", tokenTemplate.TokenHash))
+			if tokenTemplate.DataIDs == "" {
+				// desc hash + data hash
+				if len(tokenTemplate.TokenHash) != sha256.Size+crc32.Size {
+					panic(fmt.Sprintf("invalid tokenHash %s", tokenTemplate.TokenHash))
+				}
+			} else {
+				if len(tokenTemplate.TokenHash) != sha256.Size {
+					panic(fmt.Sprintf("invalid tokenHash %s", tokenTemplate.TokenHash))
+				}
 			}
+
 		}
 	}
 

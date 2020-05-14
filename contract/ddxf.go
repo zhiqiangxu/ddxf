@@ -178,7 +178,7 @@ func (c *DDXFContract) BuyDTokenFromReseller(resourceID string, n uint32, buyerA
 	if dtc == nil {
 		dtc = c.dftDtc
 	}
-	dtc.TransferDToken(resellerAccount, buyerAccount, resourceID, itemInfo.Item.Templates, n)
+	dtc.TransferDToken(resourceID, resellerAccount, buyerAccount, itemInfo.Item.Templates, n)
 
 }
 
@@ -216,7 +216,7 @@ func (c *DDXFContract) BuyDToken(resourceID string, n uint32, buyerAccount ddxf.
 	if dtc == nil {
 		dtc = c.dftDtc
 	}
-	dtc.GenerateDToken(buyerAccount, resourceID, itemInfo.Item.Templates, n)
+	dtc.GenerateDToken(resourceID, buyerAccount, itemInfo.Item.Templates, n)
 
 }
 
@@ -235,7 +235,7 @@ func (c *DDXFContract) UseToken(resourceID string, account ddxf.OntID, tokenTemp
 	if dtc == nil {
 		dtc = c.dftDtc
 	}
-	dtc.UseToken(account, resourceID, tokenTemplate, n)
+	dtc.UseToken(resourceID, account, tokenTemplate, n)
 }
 
 // UseTokenByAgent is called by agent
@@ -253,7 +253,7 @@ func (c *DDXFContract) UseTokenByAgent(resourceID string, account, agent ddxf.On
 	if dtc == nil {
 		dtc = c.dftDtc
 	}
-	dtc.UseTokenByAgent(account, agent, resourceID, tokenTemplate, n)
+	dtc.UseTokenByAgent(resourceID, account, agent, tokenTemplate, n)
 }
 
 // SetDTokenAgents is called by buyer
@@ -271,7 +271,7 @@ func (c *DDXFContract) SetDTokenAgents(resourceID string, account ddxf.OntID, ag
 	if dtc == nil {
 		dtc = c.dftDtc
 	}
-	dtc.SetAgents(account, resourceID, agents, n)
+	dtc.SetAgents(resourceID, account, agents, n)
 
 	return
 }
@@ -291,7 +291,7 @@ func (c *DDXFContract) AddDTokenAgents(resourceID string, account ddxf.OntID, ag
 	if dtc == nil {
 		dtc = c.dftDtc
 	}
-	dtc.AddAgents(account, resourceID, agents, n)
+	dtc.AddAgents(resourceID, account, agents, n)
 
 	return
 }
@@ -311,7 +311,7 @@ func (c *DDXFContract) RemoveDTokenAgents(resourceID string, account ddxf.OntID,
 	if dtc == nil {
 		dtc = c.dftDtc
 	}
-	dtc.RemoveAgents(account, resourceID, agents)
+	dtc.RemoveAgents(resourceID, account, agents)
 	return
 }
 

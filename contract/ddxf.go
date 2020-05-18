@@ -144,7 +144,10 @@ func (c *DDXFContract) DTokenSellerPublish(resourceID string, resourceDDO Resour
 					panic(fmt.Sprintf("invalid tokenHash %s", tokenTemplate.TokenHash))
 				}
 			}
-
+		default:
+			if len(tokenTemplate.TokenHash) != sha256.Size {
+				panic(fmt.Sprintf("invalid tokenHash %s", tokenTemplate.TokenHash))
+			}
 		}
 	}
 

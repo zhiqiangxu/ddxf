@@ -2,6 +2,7 @@ package ddxf
 
 import (
 	"encoding/json"
+	"math/rand"
 	"testing"
 
 	"reflect"
@@ -22,4 +23,17 @@ func TestHelper(t *testing.T) {
 	bytes, err = Object2Bytes(0)
 	bytes2, err2 := json.Marshal(0)
 	assert2.Assert(t, err == nil && err2 == nil && reflect.DeepEqual(bytes, bytes2))
+
+	{
+		rand.Seed(42)
+
+		n1 := rand.Intn(100000)
+
+		rand.Seed(42)
+
+		n2 := rand.Intn(100000)
+
+		assert2.Assert(t, n1 == n2)
+	}
+
 }

@@ -186,7 +186,7 @@ func (c *DDXFContract) BuyDTokenFromReseller(resourceID string, n uint32, buyerA
 }
 
 // BuyDToken is called by DTokenBuyer
-func (c *DDXFContract) BuyDToken(resourceID string, n uint32, buyerAccount ddxf.OntID) {
+func (c *DDXFContract) BuyDToken(resourceID string, n uint32, buyerAccount ddxf.OntID) (templates TokenTemplates) {
 	if !c.checkWitness(buyerAccount) {
 		panic("buyerAccount no witness")
 	}
@@ -221,6 +221,7 @@ func (c *DDXFContract) BuyDToken(resourceID string, n uint32, buyerAccount ddxf.
 	}
 	dtc.GenerateDToken(resourceID, buyerAccount, itemInfo.Item.Templates, n)
 
+	return itemInfo.Item.Templates
 }
 
 // UseToken is called by buyer

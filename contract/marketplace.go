@@ -19,3 +19,30 @@ type Marketplace interface {
 
 	MPAccount() ddxf.OntID
 }
+
+type marketplace struct {
+}
+
+// NewMarketplace ...
+func NewMarketplace() Marketplace {
+	return &marketplace{}
+}
+
+func (m *marketplace) SetFeeSplitModel(sellerAcc ddxf.OntID, model FeeSplitModel) {
+
+}
+
+func (m *marketplace) GetFeeSplitModel(sellerAcc ddxf.OntID) FeeSplitModel {
+	return FeeSplitModel{}
+}
+
+func (m *marketplace) Settle(sellerAcc ddxf.OntID) {
+
+}
+func (m *marketplace) TransferAmount(buyerAcc, sellerAcc ddxf.OntID, fee ddxf.Fee, n uint32) {
+
+}
+
+func (m *marketplace) MPAccount() ddxf.OntID {
+	return ddxf.OntID("")
+}

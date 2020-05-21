@@ -10,8 +10,23 @@ import (
 func Init() {
 	seller := NewSeller()
 	buyer := NewBuyer()
+	mp := NewMP()
 
 	r := gin.Default()
+	r.GET("/ddxf/mp/jsonld/types", func(c *gin.Context) {
+		types := mp.JSONLDTypes()
+		c.JSON(200, types)
+	})
+	r.GET("/ddxf/mp/jsonld/type", func(c *gin.Context) {
+		var input JSONLDInput
+		if err := c.ShouldBind(&input); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
+
+		output := mp.JSONLD(input)
+		c.JSON(200, output)
+	})
 	r.GET("/ddxf/lookupByDescHash", func(c *gin.Context) {
 		var input LookupByDescHashInput
 		if err := c.ShouldBind(&input); err != nil {

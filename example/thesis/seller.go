@@ -152,7 +152,8 @@ func (s *Seller) MPPublish(input MPPublishInput) (output MPPublishOutput) {
 
 	resourceID := uuid.New().String()
 
-	descHash, _ := ddxf.HashObject(publishMPInput)
+	descBytes, _ := ddxf.Object2Bytes(publishMPInput)
+	descHash := ddxf.Sha256Bytes(descBytes)
 
 	ddo := contract.ResourceDDO{
 		Manager:      sellerID,
@@ -182,7 +183,7 @@ func (s *Seller) MPPublish(input MPPublishInput) (output MPPublishOutput) {
 		return
 	}
 
-	s.descHashMap[descHashAndResourceID{DescHash: descHash, ResourceID: resourceID}] = input.MPDesc
+	s.descHashMap[descHashAndResourceID{DescHash: descHash, ResourceID: resourceID}] = string(descBytes)
 	for _, thesis := range input.Theses {
 		tokenHash, _ := ddxf.HashObject(thesis)
 		s.tokenTemplateMap[tokenTemplateAndResourceID{

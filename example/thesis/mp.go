@@ -13,6 +13,16 @@ type MPThesis struct {
 	DataHash string
 }
 
+// Context ...
+func (t *MPThesis) Context() map[string]interface{} {
+	return map[string]interface{}{
+		"Title":    "string",
+		"Body":     "string",
+		"Extra":    "string",
+		"DataHash": "string",
+	}
+}
+
 // MP ...
 type MP struct {
 	MPC contract.Marketplace
@@ -84,11 +94,11 @@ func (mp *MP) JSONLD(input JSONLDInput) (output JSONLDOutput) {
 	}
 
 	output.Context = map[string]interface{}{
-		"Fee":         "ddxf.Fee",
-		"ExpiredDate": "int64",
-		"Stocks":      "uint32",
-		"MPDesc":      "string",
-		"MPTheses":    "[]MPThesis",
+		"Fee":         "http://schema.org/fee",
+		"ExpiredDate": "http://schema.org/expireData",
+		"Stocks":      "http://schema.org/stocks",
+		"MPDesc":      "http://schema.org/desc",
+		"MPTheses":    "http://schema.org/MPTheses",
 	}
 	return
 }

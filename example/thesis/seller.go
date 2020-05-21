@@ -40,6 +40,15 @@ type Thesis struct {
 	Body  string
 }
 
+// Context ...
+func (t *Thesis) Context() map[string]interface{} {
+	return map[string]interface{}{
+		"ID":    "int",
+		"Title": "string",
+		"Body":  "string",
+	}
+}
+
 // DataHash for this thesis
 // TODO impl
 func (t *Thesis) DataHash() string {
@@ -48,6 +57,7 @@ func (t *Thesis) DataHash() string {
 }
 
 // ToMPThesis ...
+// TODO
 func (t *Thesis) ToMPThesis() MPThesis {
 	return MPThesis{}
 }
@@ -357,8 +367,8 @@ func (s *Seller) JSONLD(input JSONLDInput) (output JSONLDOutput) {
 	}
 
 	output.Context = map[string]interface{}{
-		"Desc":  "string",
-		"Token": "Thesis",
+		"Theses": "[]Thesis",
+		"Desc":   "string",
 	}
 	return
 }

@@ -139,20 +139,20 @@ func (s *Seller) MPPublish(input MPPublishInput) (output MPPublishOutput) {
 		mpTheses = append(mpTheses, thesis.ToMPThesis())
 	}
 
-	mpoutput := input.MP.PublishMP(
-		PublishMPInput{
-			Fee:         input.Fee,
-			ExpiredDate: input.ExpiredDate,
-			Stocks:      input.Stocks,
-			MPDesc:      input.MPDesc,
-			MPTheses:    mpTheses})
+	publishMPInput := PublishMPInput{
+		Fee:         input.Fee,
+		ExpiredDate: input.ExpiredDate,
+		Stocks:      input.Stocks,
+		MPDesc:      input.MPDesc,
+		MPTheses:    mpTheses}
+	mpoutput := input.MP.PublishMP(publishMPInput)
 	if !mpoutput.OK {
 		return
 	}
 
 	resourceID := uuid.New().String()
 
-	descHash := ddxf.Sha256Bytes([]byte(input.MPDesc))
+	descHash, _ := ddxf.HashObject(publishMPInput)
 
 	ddo := contract.ResourceDDO{
 		Manager:      sellerID,

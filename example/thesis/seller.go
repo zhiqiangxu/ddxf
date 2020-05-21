@@ -343,3 +343,21 @@ func (s *Seller) LookupByTokenTemplate(input LookupByTokenTemplateInput) (output
 	output.Thesis = thesis
 	return
 }
+
+// JSONLDTypes ...
+func (s *Seller) JSONLDTypes() []string {
+	return []string{"thesis"}
+}
+
+// JSONLD ...
+func (s *Seller) JSONLD(input JSONLDInput) (output JSONLDOutput) {
+	if input.Type != "thesis" {
+		return
+	}
+
+	output.Context = map[string]interface{}{
+		"Desc":  "string",
+		"Token": "Thesis",
+	}
+	return
+}

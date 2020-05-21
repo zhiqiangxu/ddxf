@@ -27,6 +27,20 @@ func Init() {
 		output := mp.JSONLD(input)
 		c.JSON(200, output)
 	})
+	r.GET("/ddxf/seller/jsonld/types", func(c *gin.Context) {
+		types := seller.JSONLDTypes()
+		c.JSON(200, types)
+	})
+	r.GET("/ddxf/seller/jsonld/type", func(c *gin.Context) {
+		var input JSONLDInput
+		if err := c.ShouldBind(&input); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
+
+		output := seller.JSONLD(input)
+		c.JSON(200, output)
+	})
 	r.GET("/ddxf/lookupByDescHash", func(c *gin.Context) {
 		var input LookupByDescHashInput
 		if err := c.ShouldBind(&input); err != nil {

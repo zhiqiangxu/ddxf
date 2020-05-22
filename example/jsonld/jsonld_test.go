@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"os"
+	"testing"
 
 	"github.com/piprate/json-gold/ld"
 )
@@ -235,12 +237,91 @@ func toRDF() {
 	os.Stdout.WriteString(triples.(string))
 }
 
-func main() {
+func align(a, b map[string]interface{}) (c map[string]interface{}, err error) {
+	proc := ld.NewJsonLdProcessor()
+	options := ld.NewJsonLdOptions("")
+
+	expandA, err := proc.Expand(a, options)
+	if err != nil {
+		return
+	}
+	expandB, err := proc.Expand(b, options)
+	if err != nil {
+		return
+	}
+
+	jsonA := expandA[0].(map[string]interface{})
+	jsonB := expandB[0].(map[string]interface{})
+	jsonC := make(map[string]interface{})
+	for k, v := range jsonA {
+		if _, ok := jsonB[k]; ok {
+			jsonC[k] = v
+		}
+	}
+
+	ctxB := b["@context"]
+
+	c, err = proc.Compact(jsonC, ctxB, options)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func Test(t *testing.T) {
 	// compact()
 	// expand()
 	// flatten()
 	// frame()
 	// normalize()
 	// fromRDF()
-	toRDF()
+	// toRDF()
+
+	doc1 := map[string]interface{}{
+		"@context": map[string]interface{}{
+			"sec":        "http://purl.org/security#",
+			"xsd":        "http://www.w3.org/2001/XMLSchema#",
+			"rdf":        "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+			"dc":         "http://purl.org/dc/terms/",
+			"sec:signer": map[string]interface{}{"@type": "@id"},
+			"dc:created": map[string]interface{}{"@type": "xsd:dateTime"},
+		},
+		"@id":                "http://example.org/sig1",
+		"@type":              []interface{}{"rdf:Graph", "sec:SignedGraph"},
+		"dc:created":         "2011-09-23T20:21:34Z",
+		"sec:signer":         "http://payswarm.example.com/i/john/keys/5",
+		"sec:signatureValue": "doc1",
+		"@graph": map[string]interface{}{
+			"@id":      "http://example.org/fact1",
+			"dc:title": "Hello World!",
+		},
+	}
+	doc2 := map[string]interface{}{
+		"@context": map[string]interface{}{
+			"sec2":       "http://purl.org/security#",
+			"xsd":        "http://www.w3.org/2001/XMLSchema#",
+			"rdf":        "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+			"dc":         "http://purl.org/dc/terms/",
+			"sec:signer": map[string]interface{}{"@type": "@id"},
+			"dc:created": map[string]interface{}{"@type": "xsd:dateTime"},
+		},
+		"@id":                 "http://example.org/sig1",
+		"@type":               []interface{}{"rdf:Graph", "sec:SignedGraph"},
+		"dc:created":          "2011-09-23T20:21:34Z",
+		"sec:signer":          "http://payswarm.example.com/i/john/keys/5",
+		"sec2:signatureValue": "doc2",
+		"@graph": map[string]interface{}{
+			"@id":      "http://example.org/fact1",
+			"dc:title": "Hello World!",
+		},
+	}
+
+	doc3, err := align(doc1, doc2)
+	if err != nil {
+		t.Logf("doc3:%v err:%v", doc3, err)
+		return
+	}
+	doc3Bytes, err := json.Marshal(doc3)
+	t.Logf("doc3:%s err:%v", string(doc3Bytes), err)
 }

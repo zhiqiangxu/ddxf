@@ -1,10 +1,13 @@
 {
   "go.gopath": "/Users/xuzhiqiang/.gvm/pkgsets/go1.12/global",
   "go.goroot": "/Users/xuzhiqiang/.gvm/gos/go1.12",
-  "go.toolsEnvVars": {
-    // "GOFLAGS": "-mod=vendor"
-    "PATH": "/Users/xuzhiqiang/.gvm/gos/go1.12/bin"
-  },
+  // "go.toolsEnvVars": {
+  //   // "GOFLAGS": "-mod=vendor"
+  //   "PATH": "/Users/xuzhiqiang/.gvm/gos/go1.12/bin"
+  // },
+  "go.testFlags": [
+    "-v"
+  ],
   "go.useLanguageServer": false,
   "go.formatTool": "goimports",
   "window.zoomLevel": 0,
@@ -12,10 +15,10 @@
   "explorer.confirmDragAndDrop": false,
   "editor.multiCursorModifier": "ctrlCmd",
   "[go]": {
-      "editor.insertSpaces": false,
-      "editor.formatOnSave": true,
-      "editor.codeActionsOnSave": {
-          "source.organizeImports": true
-      },
-    }
+    "editor.insertSpaces": false,
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": true
+    },
+  }
 }

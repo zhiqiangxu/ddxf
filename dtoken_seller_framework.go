@@ -37,7 +37,8 @@ func (fw *dTokenSellerFramework) PublishBatch(synthetic StaticDataSource, ss []S
 	for i, s := range ss {
 		templates[i] = TokenTemplate{DataID: s.OntID()}
 		for _, token := range tokens[i] {
-			templates[i].TokenHashes = append(templates[i].TokenHashes, Sha256Bytes(token.AlphabeticalBytes()))
+			bytes := Sha256Bytes(token.AlphabeticalBytes())
+			templates[i].TokenHashes = append(templates[i].TokenHashes, string(bytes[:]))
 		}
 	}
 	di := DTokenItem{Fee: fee, ExpiredDate: opt.ExpiredDate, Stocks: opt.Stocks, Templates: templates}
@@ -76,7 +77,8 @@ func (fw *dTokenSellerFramework) PublishSingle(s StaticDataSource, tokens []Toke
 
 	template := TokenTemplate{DataID: s.OntID()}
 	for _, token := range tokens {
-		template.TokenHashes = append(template.TokenHashes, Sha256Bytes(token.AlphabeticalBytes()))
+		bytes := Sha256Bytes(token.AlphabeticalBytes())
+		template.TokenHashes = append(template.TokenHashes, string(bytes[:]))
 	}
 	di := DTokenItem{Fee: fee, ExpiredDate: opt.ExpiredDate, Stocks: opt.Stocks, Templates: []TokenTemplate{template}}
 

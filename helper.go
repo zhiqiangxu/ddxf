@@ -49,7 +49,7 @@ func Sha256Bytes(bytes []byte) [sha256.Size]byte {
 }
 
 // Crc32Bytes converts any byte sequence to a crc32 hash string
-func Crc32Bytes(data []byte) []byte {
+func Crc32Bytes(data []byte) [4]byte {
 	s := crc32.ChecksumIEEE(data)
-	return []byte{byte(s >> 24), byte(s >> 16), byte(s >> 8), byte(s)}
+	return [4]byte{byte(s >> 24), byte(s >> 16), byte(s >> 8), byte(s)}
 }

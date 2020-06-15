@@ -1,11 +1,7 @@
 package ddxf
 
 import (
-	"encoding/json"
-	"fmt"
 	"sync"
-
-	"github.com/zhiqiangxu/ont-gateway/pkg/forward"
 )
 
 // Std for ddxf
@@ -66,29 +62,29 @@ func (std *Std) GetDataMeta(dataID, mp OntID) (dataMeta []byte, err error) {
 
 func (std *Std) resolveDataMeta(ddo DataDDO, mp OntID) (dataMeta []byte, err error) {
 
-	reqBytes, err := json.Marshal(struct {
-		Manager  HostID
-		MetaHash string
-		Hash     string
-		MP       OntID
-	}{
-		Manager:  ddo.Manager,
-		MetaHash: ddo.MetaHash,
-		Hash:     ddo.Hash,
-		MP:       mp,
-	})
-	if err != nil {
-		return
-	}
+	// reqBytes, err := json.Marshal(struct {
+	// 	Manager  HostID
+	// 	MetaHash string
+	// 	Hash     string
+	// 	MP       OntID
+	// }{
+	// 	Manager:  ddo.Manager,
+	// 	MetaHash: ddo.MetaHash,
+	// 	Hash:     ddo.Hash,
+	// 	MP:       mp,
+	// })
+	// if err != nil {
+	// 	return
+	// }
 
-	code, _, dataMeta, err := forward.PostJSONRequest(ddo.Endpoint, reqBytes)
-	if err != nil {
-		return
-	}
+	// code, _, dataMeta, err := forward.PostJSONRequest(ddo.Endpoint, reqBytes)
+	// if err != nil {
+	// 	return
+	// }
 
-	if code != 200 {
-		err = fmt.Errorf("ResolveData: code (%d) != 200", code)
-		return
-	}
+	// if code != 200 {
+	// 	err = fmt.Errorf("ResolveData: code (%d) != 200", code)
+	// 	return
+	// }
 	return
 }

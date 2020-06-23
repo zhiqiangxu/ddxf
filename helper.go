@@ -4,6 +4,8 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"hash/crc32"
+
+	"github.com/ontio/ontology/common"
 )
 
 func assert(b bool, msg string) {
@@ -40,6 +42,17 @@ func HashObject(obj interface{}) (h [sha256.Size]byte, err error) {
 	}
 
 	h = Sha256Bytes(bytes)
+	return
+}
+
+// HashObject2U256 returns u256
+func HashObject2U256(obj interface{}) (h common.Uint256, err error) {
+	hash, err := HashObject(obj)
+	if err != nil {
+		return
+	}
+
+	h, err = common.Uint256ParseFromBytes(hash[:])
 	return
 }
 

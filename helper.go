@@ -56,6 +56,16 @@ func HashObject2U256(obj interface{}) (h common.Uint256, err error) {
 	return
 }
 
+// HashObject2Hex returns u256 hex string
+func HashObject2Hex(obj interface{}) (hex string, err error) {
+	h, err := HashObject2U256(obj)
+	if err != nil {
+		return
+	}
+	hex = h.ToHexString()
+	return
+}
+
 // Sha256Bytes converts any byte sequence to a sha256 hash string
 func Sha256Bytes(bytes []byte) [sha256.Size]byte {
 	return sha256.Sum256(bytes)

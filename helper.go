@@ -2,6 +2,7 @@ package ddxf
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"hash/crc32"
 
@@ -41,6 +42,9 @@ func HashObject(obj interface{}) (h [sha256.Size]byte, err error) {
 		return
 	}
 
+	// str := hex.EncodeToString(bytes)
+	// fmt.Println("bytes", bytes, "\nstr", str)
+
 	h = Sha256Bytes(bytes)
 	return
 }
@@ -52,22 +56,27 @@ func HashObject2U256(obj interface{}) (h common.Uint256, err error) {
 		return
 	}
 
+	// fmt.Println("after HashObject", hex.EncodeToString(hash[:]))
 	h, err = common.Uint256ParseFromBytes(hash[:])
 	return
 }
 
 // HashObject2Hex returns u256 hex string
-func HashObject2Hex(obj interface{}) (hex string, err error) {
+func HashObject2Hex(obj interface{}) (result string, err error) {
 	h, err := HashObject2U256(obj)
 	if err != nil {
 		return
 	}
-	hex = h.ToHexString()
+
+	result = hex.EncodeToString(h[:])
+
+	// fmt.Println("after ToHexString", result)
 	return
 }
 
 // Sha256Bytes converts any byte sequence to a sha256 hash string
 func Sha256Bytes(bytes []byte) [sha256.Size]byte {
+	// fmt.Println("Sha256Bytes", bytes)
 	return sha256.Sum256(bytes)
 }
 

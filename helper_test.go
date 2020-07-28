@@ -2,6 +2,7 @@ package ddxf
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/rand"
 	"testing"
 
@@ -36,4 +37,13 @@ func TestHelper(t *testing.T) {
 		assert2.Assert(t, n1 == n2)
 	}
 
+	{
+		m := map[string]interface{}{
+			"key1": "value1", "key2": 2,
+		}
+
+		hex, _ := HashObject2Hex(m)
+
+		fmt.Println("after 256", hex)
+	}
 }

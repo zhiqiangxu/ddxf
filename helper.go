@@ -6,8 +6,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"hash/crc32"
+	"strings"
 
 	"github.com/ontio/ontology/common"
+	"github.com/zhiqiangxu/util"
 )
 
 func assert(b bool, msg string) {
@@ -16,12 +18,19 @@ func assert(b bool, msg string) {
 	}
 }
 
-func jsonMarshal(obj interface{}) ([]byte, error) {
+func jsonMarshal(obj interface{}) (result []byte, err error) {
+	// return json.Marshal(obj)
 	buffer := &bytes.Buffer{}
 	encoder := json.NewEncoder(buffer)
 	encoder.SetEscapeHTML(false)
-	err := encoder.Encode(obj)
-	return buffer.Bytes(), err
+	err = encoder.Encode(obj)
+	if err != nil {
+		return
+	}
+
+	trim := strings.TrimSuffix(util.String(buffer.Bytes()), "\n")
+	result = util.Slice(trim)
+	return
 }
 
 // Object2Bytes converts any object to alphabetical byte sequence

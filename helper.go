@@ -1,6 +1,7 @@
 package ddxf
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -15,9 +16,17 @@ func assert(b bool, msg string) {
 	}
 }
 
+func jsonMarshal(obj interface{}) ([]byte, error) {
+	buffer := &bytes.Buffer{}
+	encoder := json.NewEncoder(buffer)
+	encoder.SetEscapeHTML(false)
+	err := encoder.Encode(obj)
+	return buffer.Bytes(), err
+}
+
 // Object2Bytes converts any object to alphabetical byte sequence
 func Object2Bytes(obj interface{}) (bytes []byte, err error) {
-	bytes, err = json.Marshal(obj)
+	bytes, err = jsonMarshal(obj)
 	if err != nil {
 		return
 	}
@@ -28,7 +37,7 @@ func Object2Bytes(obj interface{}) (bytes []byte, err error) {
 		return
 	}
 
-	bytes, err = json.Marshal(sorted)
+	bytes, err = jsonMarshal(sorted)
 	return
 }
 
